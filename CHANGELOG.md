@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.11.0...v0.11.1) (2026-10-13)
+
+
+### Bug Fixes
+
+* verison ([46d39dc](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/46d39dcca5c5e2bc55912984045496dfd165918e))
+
 ## [0.11.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.10.0...v0.11.0) (2026-10-13)
 
 
