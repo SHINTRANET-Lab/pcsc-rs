@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.20.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.19.0...v0.20.0) (2026-10-15)
+
+
+### Features
+
+* legacy GPU ([c337210](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/c3372103d9aace00c1c27d49abd905c10b94996f))
+
+
+### Bug Fixes
+
+* fmt ([10b5715](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/10b5715562ae9d967621f57e35e3c0a0f222e87d))
+
 ## [0.19.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.18.0...v0.19.0) (2026-10-15)
 
 
