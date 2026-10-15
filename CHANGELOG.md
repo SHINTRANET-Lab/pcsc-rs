@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.18.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.17.3...v0.18.0) (2026-10-15)
+
+
+### Features
+
+* hide + hide使用率が取れないGPU ([1e479fc](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/1e479fc7d669e27a7964f4b292f49e69163d6312))
+* hide + hide使用率が取れないGPU ([098985b](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/098985b3b0757fb35200a43a939805673d5cd07c))
+* set PCSC_HIDE from the install scripts ([#698](https://github.com/SHINTRANET-Lab/pcsc-rs/issues/698)) ([0e01bff](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/0e01bff17b2033d6fc7885f96dab9f3ad4e6e077))
+
+
+### Bug Fixes
+
+* a ([07ea430](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/07ea4302146fa3c059c2956bc3f1c02c564de090))
+
 ## [0.17.3](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.17.2...v0.17.3) (2026-10-14)
 
 a
