@@ -195,7 +195,7 @@ fn look_up_name(device: &Path) -> String {
     };
     let (vendor, device_id) = (id("vendor"), id("device"));
     if vendor == "8086"
-        && let Some(name) = intel_name(&device_id)
+        && let Some(name) = super::intel::name(&device_id)
     {
         return format!("Intel {name}");
     }
