@@ -186,7 +186,7 @@ mod mobile {
             .or_else(tegra)
             .map(|(name, usage)| (name, usage, true))
             .or_else(|| {
-                raspberry_pi()
+                adreno_200_series()
                     .or_else(name_only)
                     .map(|(name, usage)| (name, usage, false))
             })?;
@@ -196,6 +196,12 @@ mod mobile {
             "Samsung" | "MediaTek" | "Arm Mali" | "PowerVR" | "Adreno"
         ) {
             renderer_name().unwrap_or(name)
+        } else {
+            name
+        };
+        // 200 と 205 は端末から見分けられない
+        let name = if matches!(name.as_str(), "Adreno 200" | "Adreno 205") {
+            "Adreno 200 Series".to_owned()
         } else {
             name
         };
@@ -408,6 +414,16 @@ mod mobile {
             .iter()
             .any(|p| rest.starts_with(p));
         (!newer).then_some("VideoCore IV")
+    }
+    fn adreno_200_series() -> Option<(String, f64)> {
+        let platform = crate::cmd::run(Command::new("getprop").arg("ro.board.platform"))
+            .ok()?
+            .stdout;
+        let platform = platform.trim().to_ascii_lowercase();
+        let legacy = ["msm7", "qsd8", "msm8255", "msm8250"]
+            .iter()
+            .any(|p| platform.starts_with(p));
+        legacy.then(|| ("Adreno 200 Series".to_owned(), 0.0))
     }
     fn raspberry_pi() -> Option<(String, f64)> {
         let model = fs::read_to_string("/proc/device-tree/model").ok()?;
