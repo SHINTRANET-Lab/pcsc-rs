@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.18.0...v0.19.0) (2026-10-15)
+
+
+### Features
+
+* Ardeno 200 Series Support ([8e1ab89](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/8e1ab89c96c848e9a4965d86af0af0a5e3f0af6d))
+
 ## [0.18.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.17.3...v0.18.0) (2026-10-15)
 
 
