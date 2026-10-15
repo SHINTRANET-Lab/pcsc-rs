@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.20.1](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.20.0...v0.20.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* Intel GPU name ([c24c6ab](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/c24c6abb8e3107dd3639660d5fbbcd298365f22d))
+* super!!intel!! woi ([409233e](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/409233e0610ebc6ba85be26586e01e836a04f86b))
+
 ## [0.20.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.19.0...v0.20.0) (2026-10-15)
 
 
