@@ -16,6 +16,8 @@ mod drm;
 #[cfg(target_os = "macos")]
 mod macos;
 // XP has neither the GPU performance counters nor DXGI
+#[cfg(any(target_os = "linux", target_os = "android", target_os = "windows"))]
+mod intel;
 #[cfg(target_os = "windows")]
 mod legacy;
 #[cfg(all(target_os = "windows", not(feature = "xp")))]
