@@ -64,7 +64,11 @@ mod tests {
         let out = "\r\nHKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\Class\\{4d36e968-e325-11ce-bfc1-08002be10318}\\0000\r\n    DriverDesc    REG_SZ    NVIDIA GeForce 9600 GT\r\n\r\nHKEY_LOCAL_MACHINE\\...\\0001\r\n    DriverDesc    REG_SZ    Intel(R) HD Graphics\r\n\r\nHKEY_LOCAL_MACHINE\\...\\0002\r\n    DriverDesc    REG_SZ    RDPDD Chained DD\r\n    DriverDesc    REG_SZ    Mirage Mirror Driver\r\n";
         assert_eq!(
             super::parse(out),
-            ["NVIDIA GeForce 9600 GT", "Intel(R) HD Graphics", "RDPDD Chained DD"]
+            [
+                "NVIDIA GeForce 9600 GT",
+                "Intel(R) HD Graphics",
+                "RDPDD Chained DD"
+            ]
         );
     }
 }

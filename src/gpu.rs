@@ -16,10 +16,10 @@ mod drm;
 #[cfg(target_os = "macos")]
 mod macos;
 // XP has neither the GPU performance counters nor DXGI
-#[cfg(all(target_os = "windows", not(feature = "xp")))]
-mod windows;
 #[cfg(target_os = "windows")]
 mod legacy;
+#[cfg(all(target_os = "windows", not(feature = "xp")))]
+mod windows;
 
 pub fn get_info() -> Vec<GpuData> {
     #[allow(unused_mut)]
@@ -34,7 +34,7 @@ pub fn get_info() -> Vec<GpuData> {
         }
     }
     // The counters cover NVIDIA's GPUs too; nvidia-smi's figures (with the temperature) win
-        #[cfg(target_os = "windows")]
+    #[cfg(target_os = "windows")]
     {
         // Performance counters (Windows 10): they do not exist on XP, Vista and 7
         #[cfg(not(feature = "xp"))]
@@ -48,7 +48,9 @@ pub fn get_info() -> Vec<GpuData> {
         let counted = false;
         if !counted {
             // Names only. nvidia-smi's NVIDIA GPUs (with usage) win over the registry's
-            let nvidia = gpus.iter().any(|g| g.name.to_ascii_lowercase().contains("nvidia"));
+            let nvidia = gpus
+                .iter()
+                .any(|g| g.name.to_ascii_lowercase().contains("nvidia"));
             gpus.extend(
                 legacy::get_info()
                     .into_iter()
