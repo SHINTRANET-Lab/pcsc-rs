@@ -212,7 +212,8 @@ mod mobile {
             .or_else(tegra)
             .map(|(name, usage)| (name, usage, true))
             .or_else(|| {
-                adreno_200_series()
+                raspberry_pi()
+                    .or_else(adreno_200_series)
                     .or_else(name_only)
                     .map(|(name, usage)| (name, usage, false))
             })?;
