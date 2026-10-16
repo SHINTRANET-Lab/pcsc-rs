@@ -48,7 +48,7 @@ impl Sampler {
             io: io::Tracker::new(),
             thermal: thermal::Tracker::default(),
             #[cfg(windows)]
-            loadavg: crate::loadavg::Loadavg::default(),   // ← ここ
+            loadavg: crate::loadavg::Loadavg::default(), // ← ここ
             interval: Duration::ZERO,
             sampled_at: Instant::now(),
         }

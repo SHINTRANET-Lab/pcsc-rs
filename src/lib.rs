@@ -31,8 +31,6 @@ mod cpuinfo;
 mod gpu;
 mod hide;
 mod io;
-#[cfg(windows)]
-mod loadavg;
 #[cfg(all(
     feature = "client",
     target_os = "linux",
@@ -40,6 +38,8 @@ mod loadavg;
     target_env = "musl"
 ))]
 mod legacy_dns;
+#[cfg(windows)]
+mod loadavg;
 mod monitor;
 mod status;
 mod thermal;
