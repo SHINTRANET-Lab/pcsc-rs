@@ -30,49 +30,61 @@ pub fn get_info() -> Vec<GpuData> {
 
 fn names() -> Vec<String> {
     const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-    let mut command = Command::new("reg");
-    command
-        .args(["query", DISPLAY_CLASS, "/s"])
-        .creation_flags(CREATE_NO_WINDOW);
-    match crate::cmd::run(&mut command) {
-        Ok(output) if output.success => parse(&output.stdout),
-        _ => Vec::new(),
+    // 「/s」だけで全部の値をたどると Vista では遅く、3 秒の制限に掛かる。必要な値だけを聞く
+    let mut text = String::new();
+    for value in ["DriverDesc", "MatchingDeviceId"] {
+        let mut command = Command::new("reg");
+        command
+            .args(["query", DISPLAY_CLASS, "/s", "/v", value])
+            .creation_flags(CREATE_NO_WINDOW);
+        // 一部のサブキーが読めないと終了コードが 1 になるので、成否ではなく出力を読む
+        if let Ok(output) = crate::cmd::run(&mut command) {
+            text.push_str(&output.stdout);
+            text.push('\n');
+        }
     }
+    parse(&text)
 }
 
 /// One adapter per registry key (`...\0000`): `DriverDesc` is the driver's name for it
 /// (`Mobile Intel(R) 965 Express Chipset Family`), `MatchingDeviceId` has the PCI IDs
 /// (`pci\ven_8086&dev_2a02&...`), which name Intel's GPUs better.
 fn parse(output: &str) -> Vec<String> {
-    let mut names: Vec<String> = Vec::new();
-    let mut desc = String::new();
-    let mut id = String::new();
-    let mut finish = |desc: &mut String, id: &mut String| {
-        if let Some(name) = adapter_name(desc.trim(), id) {
-            let lower = name.to_ascii_lowercase();
-            if !name.is_empty()
-                && !IGNORED.iter().any(|i| lower.contains(i))
-                && !names.contains(&name)
-            {
-                names.push(name);
-            }
-        }
-        desc.clear();
-        id.clear();
-    };
+    // (キー, DriverDesc, MatchingDeviceId)
+    let mut adapters: Vec<(String, String, String)> = Vec::new();
+    let mut key = String::new();
     for line in output.lines() {
         let line = line.trim();
         if line.starts_with("HKEY_") {
-            finish(&mut desc, &mut id);
-        } else if let Some((key, value)) = line.split_once("REG_SZ") {
-            match key.trim() {
-                "DriverDesc" => value.trim().clone_into(&mut desc),
-                "MatchingDeviceId" => value.trim().to_ascii_lowercase().clone_into(&mut id),
+            key = line.to_ascii_lowercase();
+        } else if let Some((name, value)) = line.split_once("REG_SZ") {
+            let value = value.trim();
+            let index = adapters.iter().position(|a| a.0 == key).unwrap_or_else(|| {
+                adapters.push((key.clone(), String::new(), String::new()));
+                adapters.len() - 1
+            });
+            match name.trim() {
+                "DriverDesc" => value.clone_into(&mut adapters[index].1),
+                "MatchingDeviceId" => {
+                    value.to_ascii_lowercase().clone_into(&mut adapters[index].2);
+                }
                 _ => {}
             }
         }
     }
-    finish(&mut desc, &mut id);
+    let mut names: Vec<String> = Vec::new();
+    for (_, desc, id) in &adapters {
+        let Some(name) = adapter_name(desc.trim(), id) else {
+            continue;
+        };
+        let lower = name.to_ascii_lowercase();
+        if !name.is_empty()
+            && !IGNORED.iter().any(|i| lower.contains(i))
+            && !names.contains(&name)
+        {
+            names.push(name);
+        }
+    }
     names
 }
 
