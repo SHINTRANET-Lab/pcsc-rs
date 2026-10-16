@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.23.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.22.0...v0.23.0) (2026-10-16)
+
+
+### Features
+
+* I/O wait for Windows ([52e8f12](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/52e8f120bb97e28f0b5396356569a94ae174b4d6))
+
+
+### Bug Fixes
+
+* VideoCore IV ([a411d68](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/a411d685a19dddb9b80466d3720989dd155a7eaa))
+* windows-sys 2 ([ed48ae1](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/ed48ae17898a67ce13f3cf3073be3f804ef0a97c))
+
 ## [0.22.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.21.0...v0.22.0) (2026-10-16)
 
 
