@@ -262,7 +262,7 @@ fn pci_name(ids: &str, vendor: &str, device: &str) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{intel_name, pci_name};
+    use super::pci_name;
 
     const IDS: &str = "\
 # comment
@@ -299,12 +299,5 @@ mod tests {
             pci_name(IDS, "102b", "0532").as_deref(),
             Some("Matrox MGA G200eW WPCM450")
         );
-    }
-    #[test]
-    fn intel_names() {
-        assert_eq!(intel_name("3ea0"), Some("UHD Graphics 620"));
-        assert_eq!(intel_name("2a42"), Some("GMA 4500MHD"));
-        assert_eq!(intel_name("0116"), Some("HD Graphics 3000"));
-        assert_eq!(intel_name("ffff"), None);
     }
 }

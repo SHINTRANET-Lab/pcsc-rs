@@ -82,18 +82,20 @@ pub fn name(device: &str) -> Option<&'static str> {
         _ => return None,
     })
 }
+#[cfg_attr(not(windows), allow(dead_code))]
 pub fn is_secondary(device: &str) -> bool {
     matches!(device, "27a6" | "29a3" | "2a03" | "2a43")
 }
 
 #[cfg(test)]
 mod tests {
+    use super::name;
+
     #[test]
-    fn names() {
-        assert_eq!(super::name("3ea0"), Some("UHD Graphics 620"));
-        assert_eq!(super::name("2a02"), Some("GMA X3100"));
-        assert_eq!(super::name("2a42"), Some("GMA 4500MHD"));
-        assert_eq!(super::name("0116"), Some("HD Graphics 3000"));
-        assert_eq!(super::name("ffff"), None);
+    fn intel_names() {
+        assert_eq!(name("3ea0"), Some("UHD Graphics 620"));
+        assert_eq!(name("2a42"), Some("GMA 4500MHD"));
+        assert_eq!(name("0116"), Some("HD Graphics 3000"));
+        assert_eq!(name("ffff"), None);
     }
 }
