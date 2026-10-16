@@ -145,7 +145,8 @@ impl SystemStatus {
 
         cfg_if! {
             if #[cfg(target_os = "windows")] {
-                let loadavg = [0.0; 3];
+                // Windows has no load average: an average of the cores' busy time
+                let loadavg = sampler.loadavg.get();
             } else {
                 let load = System::load_average();
                 let loadavg = [load.one, load.five, load.fifteen];

@@ -31,6 +31,8 @@ mod cpuinfo;
 mod gpu;
 mod hide;
 mod io;
+#[cfg(windows)]
+mod loadavg;
 #[cfg(all(
     feature = "client",
     target_os = "linux",

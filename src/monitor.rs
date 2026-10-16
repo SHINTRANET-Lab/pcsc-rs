@@ -22,6 +22,9 @@ pub struct Sampler {
     pub disks: Disks,
     pub io: io::Tracker,
     pub thermal: thermal::Tracker,
+    /// Load average of Windows, which has none (see `loadavg`)
+    #[cfg(windows)]
+    pub loadavg: crate::loadavg::Loadavg,
     /// Time between the last two samples; zero before the second one.
     pub interval: Duration,
     sampled_at: Instant,
@@ -44,6 +47,8 @@ impl Sampler {
             disks: Disks::new_with_refreshed_list_specifics(disk_refresh_kind()),
             io: io::Tracker::new(),
             thermal: thermal::Tracker::default(),
+            #[cfg(windows)]
+            loadavg: crate::loadavg::Loadavg::default(),   // ← ここ
             interval: Duration::ZERO,
             sampled_at: Instant::now(),
         }
@@ -57,6 +62,15 @@ impl Sampler {
         let now = Instant::now();
         self.interval = now.duration_since(self.sampled_at);
         self.sampled_at = now;
+        // The cores' worth of work running: usage as a fraction × the logical cores
+        #[cfg(windows)]
+        {
+            let cores = u32::try_from(self.system.cpus().len()).unwrap_or(u32::MAX);
+            self.loadavg.update(
+                f64::from(self.system.global_cpu_usage()) / 100.0 * f64::from(cores),
+                now,
+            );
+        }
     }
 }
 
