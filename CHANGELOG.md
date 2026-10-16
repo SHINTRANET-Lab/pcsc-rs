@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.22.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.21.0...v0.22.0) (2026-10-16)
+
+
+### Features
+
+* WindowsでのLoadAvg ([a70fe2b](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/a70fe2b9c5e0dace68824c90ded1a1ff2940a8da))
+
+
+### Bug Fixes
+
+* fmt ([5c18b33](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/5c18b335a81157ff8fa6ae7afd15539b6c7f7b96))
+
 ## [0.21.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.20.1...v0.21.0) (2026-10-16)
 
 
