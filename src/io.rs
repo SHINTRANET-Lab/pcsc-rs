@@ -1,18 +1,22 @@
 //! Disk activity that sysinfo does not report: the share of CPU time spent
 //! waiting for IO (iowait, what Proxmox calls "IO delay") and how busy each
-//! disk was (iostat's %util). Both come from `/proc` and exist on Linux only;
-//! elsewhere they are reported as unknown.
+//! disk was (iostat's %util). On Linux both come from `/proc`. Windows has neither, so they
+//! are estimated: a volume's busy time comes from the disk performance counters
+//! (`IOCTL_DISK_PERFORMANCE`), and iowait is the share of time the CPU was idle while the
+//! busiest disk was working. Elsewhere they are reported as unknown.
 
 /// Keeps the previous counters so each sample can report the change since the last one.
 #[derive(Default)]
 pub struct Tracker {
     #[cfg(any(target_os = "linux", target_os = "android"))]
     inner: linux::Tracker,
+    #[cfg(windows)]
+    inner: windows::Tracker,
 }
 
 // Elsewhere every value is unknown
 #[cfg_attr(
-    not(any(target_os = "linux", target_os = "android")),
+    not(any(target_os = "linux", target_os = "android", windows)),
     allow(dead_code, clippy::unused_self)
 )]
 impl Tracker {
@@ -23,15 +27,15 @@ impl Tracker {
     }
 
     pub fn refresh(&mut self) {
-        #[cfg(any(target_os = "linux", target_os = "android"))]
+        #[cfg(any(target_os = "linux", target_os = "android", windows))]
         self.inner.refresh();
     }
 
     /// Percentage of CPU time spent waiting for IO since the previous refresh.
     pub fn iowait(&self) -> Option<f64> {
-        #[cfg(any(target_os = "linux", target_os = "android"))]
+        #[cfg(any(target_os = "linux", target_os = "android", windows))]
         return self.inner.iowait;
-        #[cfg(not(any(target_os = "linux", target_os = "android")))]
+        #[cfg(not(any(target_os = "linux", target_os = "android", windows)))]
         None
     }
 
@@ -44,11 +48,12 @@ impl Tracker {
         None
     }
 
-    /// Percentage of time the device (e.g. `/dev/sda1`) was busy since the previous refresh.
+    /// Percentage of time the device (e.g. `/dev/sda1`, on Windows the mount point `C:\`)
+    /// was busy since the previous refresh.
     pub fn busy(&self, device: &str) -> Option<f64> {
-        #[cfg(any(target_os = "linux", target_os = "android"))]
+        #[cfg(any(target_os = "linux", target_os = "android", windows))]
         return self.inner.busy(device);
-        #[cfg(not(any(target_os = "linux", target_os = "android")))]
+        #[cfg(not(any(target_os = "linux", target_os = "android", windows)))]
         {
             let _ = device;
             None
@@ -193,6 +198,156 @@ mod linux {
             let real = fs::canonicalize(device).ok()?;
             let name = Path::new(&real).file_name()?.to_str()?;
             self.busy.get(name).copied()
+        }
+    }
+}
+
+#[cfg(windows)]
+mod windows {
+    use std::{collections::HashMap, ptr};
+
+    use windows_sys::Win32::{
+        Foundation::{CloseHandle, FILETIME, INVALID_HANDLE_VALUE},
+        Storage::FileSystem::{
+            CreateFileW, FILE_SHARE_READ, FILE_SHARE_WRITE, GetDriveTypeW, GetLogicalDrives,
+            OPEN_EXISTING,
+        },
+        System::{
+            IO::DeviceIoControl,
+            Ioctl::{DISK_PERFORMANCE, IOCTL_DISK_PERFORMANCE},
+            Threading::GetSystemTimes,
+        },
+    };
+
+    /// `DRIVE_FIXED`: hard disks and SSDs (not CD drives, which would spin up)
+    const DRIVE_FIXED: u32 = 3;
+
+    #[derive(Default)]
+    pub struct Tracker {
+        /// Idle and total CPU time at the previous refresh
+        cpu: Option<(u64, u64)>,
+        /// Query time and idle time (100 ns units) of each volume at the previous refresh
+        disks: HashMap<char, (i64, i64)>,
+        pub iowait: Option<f64>,
+        busy: HashMap<char, f64>,
+    }
+
+    impl Tracker {
+        #[allow(clippy::cast_precision_loss)]
+        pub fn refresh(&mut self) {
+            // The CPU's idle share since the previous refresh
+            let cpu = system_times();
+            let idle_share = match (self.cpu, cpu) {
+                (Some((old_idle, old_total)), Some((idle, total))) => {
+                    let total = total.saturating_sub(old_total);
+                    (total > 0).then(|| {
+                        (idle.saturating_sub(old_idle) as f64 / total as f64 * 100.0)
+                            .clamp(0.0, 100.0)
+                    })
+                }
+                _ => None,
+            };
+            self.cpu = cpu;
+
+            // Each volume's busy share: what the time without IO in flight leaves
+            let mut disks = HashMap::new();
+            self.busy.clear();
+            for letter in fixed_drives() {
+                let Some((query, idle)) = disk_times(letter) else {
+                    continue;
+                };
+                if let Some(&(old_query, old_idle)) = self.disks.get(&letter) {
+                    let elapsed = query - old_query;
+                    if elapsed > 0 {
+                        let idle_share = (idle - old_idle) as f64 / elapsed as f64 * 100.0;
+                        self.busy
+                            .insert(letter, (100.0 - idle_share).clamp(0.0, 100.0));
+                    }
+                }
+                disks.insert(letter, (query, idle));
+            }
+            self.disks = disks;
+
+            // CPU idle while the busiest disk was working
+            let busiest = self.busy.values().copied().fold(0.0, f64::max);
+            self.iowait = idle_share.map(|idle| idle * busiest / 100.0);
+        }
+
+        /// `C:\` → the volume `C:`
+        pub fn busy(&self, mount_point: &str) -> Option<f64> {
+            let letter = mount_point.chars().next()?.to_ascii_uppercase();
+            self.busy.get(&letter).copied()
+        }
+    }
+
+    fn file_time(time: FILETIME) -> u64 {
+        (u64::from(time.dwHighDateTime) << 32) | u64::from(time.dwLowDateTime)
+    }
+
+    /// Idle and total (kernel, which includes idle, plus user) CPU time, 100 ns units
+    fn system_times() -> Option<(u64, u64)> {
+        let zero = FILETIME {
+            dwLowDateTime: 0,
+            dwHighDateTime: 0,
+        };
+        let (mut idle, mut kernel, mut user) = (zero, zero, zero);
+        // SAFETY: three valid FILETIMEs to write to
+        let ok = unsafe { GetSystemTimes(&raw mut idle, &raw mut kernel, &raw mut user) };
+        (ok != 0).then(|| (file_time(idle), file_time(kernel) + file_time(user)))
+    }
+
+    fn fixed_drives() -> Vec<char> {
+        // SAFETY: no arguments
+        let mask = unsafe { GetLogicalDrives() };
+        (0..26u8)
+            .filter(|bit| mask >> bit & 1 == 1)
+            .map(|bit| char::from(b'A' + bit))
+            .filter(|letter| {
+                let root: Vec<u16> = format!("{letter}:\\")
+                    .encode_utf16()
+                    .chain(Some(0))
+                    .collect();
+                // SAFETY: a null-terminated wide string
+                unsafe { GetDriveTypeW(root.as_ptr()) == DRIVE_FIXED }
+            })
+            .collect()
+    }
+
+    /// `QueryTime` and `IdleTime` of the volume (`\\.\C:`), 100 ns units. Opened without any
+    /// access, which is enough to ask for the counters; `None` where it is refused.
+    fn disk_times(letter: char) -> Option<(i64, i64)> {
+        let path: Vec<u16> = format!(r"\\.\{letter}:")
+            .encode_utf16()
+            .chain(Some(0))
+            .collect();
+        // SAFETY: valid arguments; the handle is closed before returning
+        unsafe {
+            let handle = CreateFileW(
+                path.as_ptr(),
+                0,
+                FILE_SHARE_READ | FILE_SHARE_WRITE,
+                ptr::null(),
+                OPEN_EXISTING,
+                0,
+                ptr::null_mut(),
+            );
+            if handle == INVALID_HANDLE_VALUE {
+                return None;
+            }
+            let mut perf: DISK_PERFORMANCE = std::mem::zeroed();
+            let mut returned = 0u32;
+            let ok = DeviceIoControl(
+                handle,
+                IOCTL_DISK_PERFORMANCE,
+                ptr::null(),
+                0,
+                (&raw mut perf).cast(),
+                u32::try_from(size_of::<DISK_PERFORMANCE>()).unwrap_or(0),
+                &raw mut returned,
+                ptr::null_mut(),
+            );
+            CloseHandle(handle);
+            (ok != 0).then_some((perf.QueryTime, perf.IdleTime))
         }
     }
 }

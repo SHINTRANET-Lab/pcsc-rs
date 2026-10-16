@@ -378,9 +378,14 @@ fn storages(disks: &Disks, io: &io::Tracker, interval: Duration) -> Vec<StorageD
         } else {
             (read, written)
         };
+        #[cfg(windows)]
+        let busy_key = disk.mount_point().to_string_lossy().into_owned();
+        #[cfg(not(windows))]
+        let busy_key = disk.name().to_string_lossy().into_owned();
+
         storages.push(StorageData {
             // by the device, not the name shown (a mount point on Android)
-            busy: io.busy(&disk.name().to_string_lossy()),
+            busy: io.busy(&busy_key),
             name,
             free,
             total,
