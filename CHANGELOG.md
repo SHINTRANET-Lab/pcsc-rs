@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.21.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.20.1...v0.21.0) (2026-10-16)
+
+
+### Features
+
+* use the system monitor as a library (pcsc_rs::Monitor) ([bb63ba1](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/bb63ba1d50526e83f4c22e35c9385a043923d00e))
+
 ## [0.20.1](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.20.0...v0.20.1) (2026-10-15)
 
 
