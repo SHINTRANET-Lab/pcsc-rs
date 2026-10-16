@@ -27,7 +27,8 @@ HOSTNAME=ホスト名として表示させたい文字列
 3. CPU 名、CPU 使用率 (全体, コアごと) (e.g. `AMD Ryzen 5 3500 6-Core Processor`)
 4. 物理メモリ使用量、スワップメモリ使用量
 5. マウントされているストレージ使用量 (実行されている root を参照)
-6. GPU 使用率、GPU メモリ使用量 (NVIDIA GPU は複数枚対応・温度も。Android は Adreno)
+6. GPU 名、GPU 使用率、GPU メモリ使用量 (NVIDIA・AMD・Intel は複数枚対応。NVIDIA は温度も。Android は Adreno・Mali など。Windows XP / Vista / 7 は名前のみ)
+   - 使用率を読めない GPU は、使用率が「非公開」になります。
 7. 連続起動時間
 8. Load Average (Linux のみ)
 9. バッテリー残量、充電中かどうか (バッテリーのある PC・スマホのみ)
@@ -37,6 +38,7 @@ HOSTNAME=ホスト名として表示させたい文字列
 
 最近の Windows (Server 含む), macOS, Linux であれば動作すると思います。Windows XP などの古い Windows では、32 ビット版 (`mimizk-rs-…-i686-pc-windows-msvc.exe`) を[手動で入れて](#windows)ください。\
 もし動作しない場合は [Issues](https://github.com/SHINTRANET-Lab/pcsc-rs/issues) から報告をお願いします。
+Windows XP / Vista / 7 では、GPU は名前だけ表示され、使用率は「非公開」になります。
 
 ## 使い方
 
@@ -319,3 +321,31 @@ $env:PASS = "<PASS>"; .\scripts\android-adb.ps1 install -Hostname 表示した�
 - `HOSTNAME`
 
   PC Status に表示するホスト名 (デフォルト: PC のホスト名)
+- `PCSC_HIDE`
+
+  PC Status に出さない項目 (デフォルト: なし)。名前をカンマか空白で区切って書きます (大文字小文字は区別しません)。\
+  隠した項目は送らず、PC Status には「非公開」と表示されます。
+
+  | 名前 | 隠すもの |
+  | --- | --- |
+  | `os` | OS の名前とバージョン |
+  | `cpu` | コアごとの CPU 使用率 |
+  | `cpu_name` | CPU 名とコアの種類 |
+  | `cpu_frequency` | コアの最高周波数 |
+  | `memory` | メモリとスワップ |
+  | `storage` | ストレージ |
+  | `gpu` | GPU すべて (下の 4 つをまとめて) |
+  | `gpu_name` | GPU 名 |
+  | `gpu_usage` | GPU 使用率 |
+  | `gpu_memory` | GPU メモリ |
+  | `temperature` | 温度センサー (GPU のものも) |
+  | `battery` | バッテリー |
+  | `uptime` | 連続起動時間 |
+  | `loadavg` | Load Average |
+  | `iowait` | IO wait |
+
+```env
+  PCSC_HIDE=gpu_usage,temperature
+```
+
+  GPU 使用率を読めない GPU (MediaTek / Mali の多くや Raspberry Pi、BMC の VGA、Windows XP / Vista / 7 など) だけの PC では、`PCSC_HIDE` を指定しなくても、GPU 使用率は自動で「非公開」になります (0% とは送りません)。
