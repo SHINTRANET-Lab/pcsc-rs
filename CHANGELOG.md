@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.23.1](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.23.0...v0.23.1) (2026-10-16)
+
+
+### Bug Fixes
+
+* cant look GPU for Wiindows VIsta ([f81211b](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/f81211bb8d38abd92147c1a3dc5dc36e48ca1987))
+* fmt ([cb4326e](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/cb4326eb1cbf3097e65cc490c31a91abd53aac20))
+
 ## [0.23.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.22.0...v0.23.0) (2026-10-16)
 
 
