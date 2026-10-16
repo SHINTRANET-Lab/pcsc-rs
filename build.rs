@@ -20,7 +20,9 @@ fn main() -> io::Result<()> {
     }
 
     #[cfg(windows)]
-    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows") {
+    if std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows")
+        && std::env::var_os("CARGO_FEATURE_CLIENT").is_some()
+    {
         WindowsResource::new()
             .set_icon("assets/icon.ico")
             .compile()?;

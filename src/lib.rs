@@ -1,4 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// Without the client, the parts only it uses (TLS setup, PCSC_HIDE parsing, logging) are idle
+#![cfg_attr(not(feature = "client"), allow(dead_code, unused_macros))]
 
 /// println! that never panics: a hung-up terminal (EIO), a closed pipe (EPIPE) or a full
 /// disk behind the log (ENOSPC) must not stop the client.
@@ -20,20 +22,50 @@ macro_rules! elog {
 #[cfg(any(target_os = "linux", target_os = "android"))]
 mod android;
 mod battery;
+#[cfg(feature = "client")]
 mod client;
 mod cmd;
+#[cfg(feature = "client")]
 mod config;
 mod cpuinfo;
 mod gpu;
 mod hide;
 mod io;
-#[cfg(all(target_os = "linux", target_arch = "arm", target_env = "musl"))]
+#[cfg(all(
+    feature = "client",
+    target_os = "linux",
+    target_arch = "arm",
+    target_env = "musl"
+))]
 mod legacy_dns;
 mod monitor;
 mod status;
 mod thermal;
+#[cfg(feature = "client")]
 mod update;
+
+#[cfg(feature = "client")]
 pub use config::Config;
+
+/// The system monitor alone, for programs that show this PC's status locally (such as a
+/// chat box overlay): it samples the system every second on a thread of its own, as the client
+/// does before sending.
+pub struct Monitor(monitor::SharedStatus);
+
+impl Monitor {
+    /// Starts sampling. The first sample is taken before this returns.
+    #[must_use]
+    pub fn start() -> Self {
+        Self(monitor::spawn(status::Identity::default()))
+    }
+
+    /// The latest sample, in the format the client sends to PC Status (see the README):
+    /// `cpu.cpus[].cpu`, `ram.free`/`ram.total`, `gpus[]`, `storages[]` and so on.
+    #[must_use]
+    pub fn status(&self) -> serde_json::Value {
+        serde_json::to_value(&**self.0.load()).unwrap_or_default()
+    }
+}
 
 // Rustls replaces native-tls for both targets that cannot use the system OpenSSL.
 #[cfg(all(
@@ -53,6 +85,7 @@ pub fn exec_as_shell_user(command: impl Iterator<Item = std::ffi::OsString>) -> 
 
 /// Checks for an update, starts the system monitor, keeps a connection to the
 /// PC Status server, and never returns.
+#[cfg(feature = "client")]
 pub fn start(config: &Config) -> ! {
     // Before the updater starts, whose HTTP client starts threads.
     #[cfg(all(
