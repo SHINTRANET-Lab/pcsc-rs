@@ -30,7 +30,7 @@ HOSTNAME=ホスト名として表示させたい文字列
 6. GPU 名、GPU 使用率、GPU メモリ使用量 (NVIDIA・AMD・Intel は複数枚対応。NVIDIA は温度も。Android は Adreno・Mali など。Windows XP / Vista / 7 は名前のみ)
    - 使用率を読めない GPU は、使用率が「非公開」になります。
 7. 連続起動時間
-8. Load Average (Linux のみ)
+8. Load Average (Linux。Windows は CPU 使用率から作った近似値)
 9. バッテリー残量、充電中かどうか (バッテリーのある PC・スマホのみ)
 10. センサーの温度 (CPU、NVMe など。Windows は管理者権限 (`-System` でのインストール) のときだけ取れます。Android は CPU・GPU・メモリ・バッテリーなどにまとめて表示)
 
