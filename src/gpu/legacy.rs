@@ -66,7 +66,9 @@ fn parse(output: &str) -> Vec<String> {
             match name.trim() {
                 "DriverDesc" => value.clone_into(&mut adapters[index].1),
                 "MatchingDeviceId" => {
-                    value.to_ascii_lowercase().clone_into(&mut adapters[index].2);
+                    value
+                        .to_ascii_lowercase()
+                        .clone_into(&mut adapters[index].2);
                 }
                 _ => {}
             }
@@ -78,9 +80,7 @@ fn parse(output: &str) -> Vec<String> {
             continue;
         };
         let lower = name.to_ascii_lowercase();
-        if !name.is_empty()
-            && !IGNORED.iter().any(|i| lower.contains(i))
-            && !names.contains(&name)
+        if !name.is_empty() && !IGNORED.iter().any(|i| lower.contains(i)) && !names.contains(&name)
         {
             names.push(name);
         }
