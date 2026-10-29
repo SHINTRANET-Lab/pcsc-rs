@@ -209,6 +209,7 @@ mod mobile {
             .or_else(mediatek_mali)
             .or_else(generic_mali)
             .or_else(powervr)
+            .or_else(tegra_x1)
             .or_else(tegra)
             .map(|(name, usage)| (name, usage, true))
             .or_else(|| {
@@ -458,6 +459,14 @@ mod mobile {
     }
     fn name_only() -> Option<(String, f64)> {
         Some((renderer_name()?, 0.0))
+    }
+    fn tegra_x1() -> Option<(String, f64)> {
+        let load = fs::read_to_string("/sys/devices/57000000.gpu/load").ok()?;
+        let tenths: f64 = load.trim().parse().ok()?;
+        Some((
+            "NVIDIA Tegra X1 (Maxwell)".to_owned(),
+            (tenths / 10.0).clamp(0.0, 100.0),
+        ))
     }
 }
 

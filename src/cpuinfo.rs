@@ -296,7 +296,7 @@ fn getprop(name: &str) -> Option<String> {
 /// Number of cores the kernel could ever run, online or not.
 pub fn possible_cores() -> Option<usize> {
     static N: OnceLock<Option<usize>> = OnceLock::new();
-    *N.get_or_init(|| read("/sys/devices/system/cpu/possible").and_then(|t| parse_range_count(&t)))
+    *N.get_or_init(|| read("/sys/devices/system/cpu/present").and_then(|t| parse_range_count(&t)))
 }
 
 fn soc_name(cores: &[CoreInfo]) -> Option<String> {
@@ -310,6 +310,10 @@ fn soc_name(cores: &[CoreInfo]) -> Option<String> {
     }
     // Device tree (Raspberry Pi, most SBCs and phones)
     if let Some(model) = read("/proc/device-tree/model") {
+        // The Switch's board is named "Nintendo Switch (2017)"; its SoC is the Tegra X1
+        if model.starts_with("Nintendo Switch") {
+            return Some("Tegra X1 in Nintendo Switch".to_owned());
+        }
         return Some(model);
     }
     // Qualcomm and others expose it here
