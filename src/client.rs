@@ -255,7 +255,21 @@ fn connect(uri: &str) -> tungstenite::Result<Socket> {
     };
     // Rustls targets: the TLS handshake happens during the upgrade, under the same timeouts.
     #[cfg(not(feature = "native-tls"))]
-    let handshake = tungstenite::client_tls_with_config(request, stream, None, None);
+    #[cfg(not(feature = "native-tls"))]
+    let handshake = {
+        use std::sync::Arc;
+        use tungstenite::Connector;
+        let connector = tls.then(|| {
+            let roots = rustls::RootCertStore {
+                roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
+            };
+            let config = rustls::ClientConfig::builder()
+                .with_root_certificates(roots)
+                .with_no_client_auth();
+            Connector::Rustls(Arc::new(config))
+        });
+        tungstenite::client_tls_with_config(request, stream, None, connector)
+    };
     match handshake {
         Ok((socket, _)) => Ok(socket),
         Err(HandshakeError::Failure(e)) => Err(e),
