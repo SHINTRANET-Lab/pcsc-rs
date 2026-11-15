@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.23.2...v0.24.0) (2026-10-29)
+
+
+### Features
+
+* Nintendo Switch 2017 Support ([63abb2b](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/63abb2ba886722590f34cd25bfa5bb930819f054))
+
 ## [0.23.2](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.23.1...v0.23.2) (2026-10-16)
 
 
