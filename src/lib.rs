@@ -85,8 +85,8 @@ pub fn exec_as_shell_user(command: impl Iterator<Item = std::ffi::OsString>) -> 
     android::exec_as_shell_user(command)
 }
 
-/// Checks for an update, starts the system monitor, keeps a connection to the
-/// PC Status server, and never returns.
+/// Checks for an update (except in android-legacy builds), starts the system
+/// monitor, keeps a connection to the PC Status server, and never returns.
 #[cfg(feature = "client")]
 pub fn start(config: &Config) -> ! {
     // Before the updater starts, whose HTTP client starts threads.
@@ -96,8 +96,11 @@ pub fn start(config: &Config) -> ! {
     ))]
     android::prepare_tls();
 
-    update::check(config.on_update);
-    update::spawn_periodic(config.on_update);
+    #[cfg(not(feature = "android-legacy"))]
+    {
+        update::check(config.on_update);
+        update::spawn_periodic(config.on_update);
+    }
 
     let hostname = config.hostname.clone();
     #[cfg(any(target_os = "linux", target_os = "android"))]
@@ -120,6 +123,7 @@ pub fn start(config: &Config) -> ! {
         hostname,
         dev: config.dev,
         hidden: config.hidden.clone(),
+        os: config.os.clone(),
     });
 
     log!("This OS is supported!");

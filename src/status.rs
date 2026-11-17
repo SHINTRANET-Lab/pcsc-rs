@@ -116,6 +116,7 @@ pub struct Identity {
     pub hostname: Option<String>,
     pub dev: bool,
     pub hidden: Hidden,
+    pub os: Option<String>,
 }
 
 /// Version shown for this client in PC Status.
@@ -164,7 +165,10 @@ impl SystemStatus {
 
         let status = Self {
             dev: identity.dev,
-            _os: format!("{os_name} {os_version}").trim_end().to_owned(),
+            _os: identity
+                .os
+                .clone()
+                .unwrap_or_else(|| format!("{os_name} {os_version}").trim_end().to_owned()),
             hostname,
             version: CLIENT_VERSION.into(),
             cpu,

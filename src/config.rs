@@ -41,14 +41,18 @@ pub struct Config {
     /// What to keep off PC Status (`PCSC_HIDE`), and the names in it that are not items.
     pub hidden: Hidden,
     pub unknown_hidden: Vec<String>,
+    /// OS name shown instead of the detected one (`PCSC_OS`).
+    pub os: Option<String>,
 }
 
 impl Config {
-    /// Reads the configuration from the environment. `None` when `PASS` is missing.
-    #[must_use]
     pub fn from_env() -> Option<Self> {
         let pass = env::var("PASS").ok()?;
         let (hidden, unknown_hidden) = Hidden::parse(&env::var("PCSC_HIDE").unwrap_or_default());
+        let os = env::var("PCSC_OS")
+            .ok()
+            .map(|v| v.trim().to_owned())
+            .filter(|v| !v.is_empty());
         Some(Self {
             uri: websocket_url(&env::var("PCSC_URI").unwrap_or_else(|_| DEFAULT_URI.into())),
             pass,
@@ -57,6 +61,7 @@ impl Config {
             on_update: OnUpdate::parse(env::var("PCSC_UPDATED").ok().as_deref()),
             hidden,
             unknown_hidden,
+            os,
         })
     }
 }
