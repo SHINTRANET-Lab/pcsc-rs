@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.25.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.24.0...v0.25.0) (2026-11-17)
+
+
+### Features
+
+* add OSname config ([c357d35](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/c357d3574213eeb9bae9dd49324b6a61b5c52add))
+
 ## [0.24.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.23.2...v0.24.0) (2026-10-29)
 
 
