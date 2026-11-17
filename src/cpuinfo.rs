@@ -499,11 +499,80 @@ pub fn is_mixed(kinds: &[Option<CoreKind>]) -> bool {
 }
 
 /// How long a guess about offline cores is kept before looking again.
+/// How long a guess about offline cores is kept before looking again.
 const KINDS_RECHECK: Duration = Duration::from_secs(10);
 
-/// The kind of each core, indexed by CPU number. Empty where cores have no CPU part.
-/// A kind never changes, so it is read once; but while some cores were offline their
-/// kind was only guessed (like the nearest lower core), so that is checked again now and then.
+/// How often to look again when the boot log no longer has the line.
+const CLOCK_RECHECK: Duration = Duration::from_secs(600);
+
+/// `CPU Clock: 580MHz` in the kernel's boot log (MIPS SoCs such as the MT7628 have no cpufreq).
+fn parse_cpu_clock(log: &str) -> Option<u32> {
+    let rest = log.split("CPU Clock:").nth(1)?;
+    let digits: String = rest
+        .trim_start()
+        .chars()
+        .take_while(char::is_ascii_digit)
+        .collect();
+    digits.parse().ok()
+}
+
+/// Broadcom iProc: `iproc_clocksource_init: CPU global timer freq 200000002`. The Cortex-A9
+/// global timer runs at half the CPU clock, so the CPU is at twice this figure.
+fn parse_gtimer_clock(log: &str) -> Option<u32> {
+    let hz: u64 = log.lines().find_map(|line| {
+        line.split_once("CPU global timer freq")?
+            .1
+            .split_whitespace()
+            .next()?
+            .parse()
+            .ok()
+    })?;
+    u32::try_from((hz * 2 + 500_000) / 1_000_000).ok()
+}
+
+/// The CPU clock the kernel logged at boot, in whichever form this SoC uses.
+fn parse_boot_log(log: &str) -> Option<u32> {
+    parse_cpu_clock(log).or_else(|| parse_gtimer_clock(log))
+}
+
+/// The CPU clock on MIPS and old 32-bit ARM, which have no cpufreq: from the device tree
+/// (`clock-frequency`, big-endian Hz) or else the kernel's boot log (`dmesg`, then OpenWrt's
+/// `logread`). The log is a ring buffer: on a machine that has been up for long the line may
+/// be gone, so this tries again now and then.
+fn boot_clock_mhz() -> Option<u32> {
+    if !cfg!(any(
+        target_arch = "mips",
+        target_arch = "mips64",
+        target_arch = "arm"
+    )) {
+        return None;
+    }
+    static CACHE: Mutex<Option<(Instant, Option<u32>)>> = Mutex::new(None);
+    let mut cache = CACHE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if let Some((at, mhz)) = *cache
+        && (mhz.is_some() || at.elapsed() < CLOCK_RECHECK)
+    {
+        return mhz;
+    }
+    let from_tree = fs::read("/proc/device-tree/cpus/cpu@0/clock-frequency")
+        .ok()
+        .and_then(|b| <[u8; 4]>::try_from(b.as_slice()).ok())
+        .map(|b| u32::from_be_bytes(b) / 1_000_000)
+        .filter(|mhz| *mhz > 0);
+    let mhz = from_tree.or_else(|| {
+        let run = |program: &str, args: &[&str]| {
+            crate::cmd::run(std::process::Command::new(program).args(args))
+                .ok()
+                .and_then(|o| parse_boot_log(&o.stdout))
+        };
+        run("dmesg", &[]).or_else(|| run("logread", &[]))
+    });
+    *cache = Some((Instant::now(), mhz));
+    mhz
+}
+
 #[cfg(not(windows))]
 pub fn max_mhz_per_core(total: usize) -> Vec<Option<u32>> {
     static CACHE: Mutex<Option<(Instant, usize, bool, Vec<Option<u32>>)>> = Mutex::new(None);
@@ -530,9 +599,15 @@ pub fn max_mhz_per_core(total: usize) -> Vec<Option<u32>> {
         ))
         .is_some()
     });
-    let mhz: Vec<Option<u32>> = (0..total)
+    let mut mhz: Vec<Option<u32>> = (0..total)
         .map(|i| freqs.get(&i).and_then(|khz| u32::try_from(khz / 1000).ok()))
         .collect();
+    // No cpufreq at all (MIPS, old ARM): the kernel logged its (fixed) clock at boot
+    if mhz.iter().all(Option::is_none)
+        && let Some(clock) = boot_clock_mhz()
+    {
+        mhz = vec![Some(clock); total];
+    }
     *cache = Some((Instant::now(), total, complete, mhz.clone()));
     mhz
 }
@@ -794,5 +869,17 @@ mod tests {
         // 4 cores: "Tegra 3" where /sys/kernel/cluster exists, else plain "Tegra"
         assert!(matches!(tegra_name(&a9(4)).as_str(), "Tegra 3" | "Tegra"));
         assert_eq!(tegra_name(&[]), "Tegra");
+    }
+    #[test]
+    fn boot_clock_lines() {
+        assert_eq!(
+            parse_boot_log("[    0.000000] CPU Clock: 580MHz\n"),
+            Some(580)
+        );
+        assert_eq!(
+            parse_boot_log("iproc_clocksource_init: CPU global timer freq 200000002\n"),
+            Some(400)
+        );
+        assert_eq!(parse_boot_log("nothing here\n"), None);
     }
 }
