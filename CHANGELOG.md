@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.26.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.25.0...v0.26.0) (2026-11-17)
+
+
+### Features
+
+* cpu clock ([63e2637](https://github.com/SHINTRANET-Lab/pcsc-rs/commit/63e2637696817638feaf8c921f4ead9072b91577))
+
 ## [0.25.0](https://github.com/SHINTRANET-Lab/pcsc-rs/compare/v0.24.0...v0.25.0) (2026-11-17)
 
 
