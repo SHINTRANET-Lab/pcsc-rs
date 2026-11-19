@@ -5,6 +5,7 @@
   pkg-config,
   openssl,
   zlib,
+  libgit2,
 }:
 let
   cargoToml = lib.importTOML ../Cargo.toml;
@@ -26,7 +27,10 @@ rustPlatform.buildRustPackage {
   cargoLock.lockFile = ../Cargo.lock;
 
   nativeBuildInputs = [ pkg-config ];
-  buildInputs = [ zlib ] ++ lib.optionals stdenv.hostPlatform.isLinux [ openssl ];
+  buildInputs = [
+    zlib
+    libgit2
+  ] ++ lib.optionals stdenv.hostPlatform.isLinux [ openssl ];
   # Cargo.toml asks for a vendored OpenSSL so release builds are static; use nixpkgs' instead
   env.OPENSSL_NO_VENDOR = "1";
 
